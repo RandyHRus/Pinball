@@ -1,27 +1,180 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>This is a title</title>
+    <title>Pinball</title>
   </head>
   <body>
     <script src="matter.js" type="text/javascript"></script>
     <script>
         let engine = Matter.Engine.create();
 
-        let renderer = Matter.Render.create({
+        let render = Matter.Render.create({
             element: document.body,
             engine: engine
         });
 
-        let ground = Matter.Bodies.rectangle(400,600,810,60, {isStatic: true});
+        FLIPPER_ANGLE_UP = Math.PI * -0.19;
+        FLIPPER_ANGLE_DOWN = Math.PI * 0.19;
+        FLIPPER_SPEED = 0.3;
+        FLIPPER_LENGTH = 100;
+        FLIPPER_WIDTH = 20;
+        FLIPPER_OFFSET = 130;
 
-        let boxA = Matter.Bodies.rectangle(400,200,80,80);
-        let boxB = Matter.Bodies.rectangle(400,50,80,80);
+        EDGE_WIDTH = 20;
+        BOARD_WIDTH = 600;
+        BOARD_HEIGHT = 650;
 
-        Matter.World.add(engine.world, [boxA, boxB, ground]);
+        RAMP_ANGLE = Math.PI * 0.04
+
+        BALL_RADIUS = 20;
+
+        let ground = Matter.Bodies.rectangle(0,0, BOARD_WIDTH-70,EDGE_WIDTH, {isStatic: true});
+        let ceiling = Matter.Bodies.rectangle(0,0,BOARD_WIDTH,EDGE_WIDTH, {isStatic: true});
+        let leftWall = Matter.Bodies.rectangle(0,0,EDGE_WIDTH,BOARD_HEIGHT, {isStatic: true});
+        let rightWall = Matter.Bodies.rectangle(0,0,EDGE_WIDTH,BOARD_HEIGHT, {isStatic: true});
+        let ramp = Matter.Bodies.rectangle(0,0,BOARD_WIDTH-90,EDGE_WIDTH, {isStatic: true});
+
+        let holder = Matter.Bodies.rectangle(0,0,EDGE_WIDTH,BOARD_HEIGHT-200, {isStatic: true});
+
+        let ball = Matter.Bodies.circle(window.innerWidth/2+(BOARD_WIDTH/2)-(EDGE_WIDTH/2),300,BALL_RADIUS);
+
+        let slingBumper = Matter.Bodies.rectangle(0,0,25,25);
+        let slingShot = Matter.Constraint.create({
+            pointA: {x:0,y:0},
+            bodyB: slingBumper,
+            stiffness: 0.05,
+            length: 0,
+            damping: 0
+        })
+
+        let leftFlipper = {
+            body: Matter.Bodies.rectangle(0, 0, FLIPPER_LENGTH, FLIPPER_WIDTH, {isStatic: true}),
+            anim: null,
+            angle: FLIPPER_ANGLE_DOWN
+        }
+
+        let rightFlipper = {
+            body: Matter.Bodies.rectangle(0, 0, FLIPPER_LENGTH, FLIPPER_WIDTH, {isStatic: true}),
+            anim: null,
+            angle: FLIPPER_ANGLE_DOWN,
+        }
+
+        //Set flipper pivots
+        leftFlipper.body.position.x -= FLIPPER_LENGTH/2 + 5;
+        rightFlipper.body.position.x += FLIPPER_LENGTH/2 + 5;
+
+        //Set flipper angles
+        Matter.Body.setAngle(leftFlipper.body, FLIPPER_ANGLE_DOWN);
+        Matter.Body.setAngle(rightFlipper.body, -FLIPPER_ANGLE_DOWN);
+
+        //Set ramp angle
+        Matter.Body.setAngle(ramp, RAMP_ANGLE);
+        
+        function reposition() {
+            render.canvas.width = window.innerWidth;
+            render.canvas.height = window.innerHeight;
+
+            Matter.Body.setPosition(ground, {x: window.innerWidth/2, y: (window.innerHeight/2)+(BOARD_HEIGHT/2)-(EDGE_WIDTH/2)});
+            Matter.Body.setPosition(ceiling, {x: window.innerWidth/2, y: (window.innerHeight/2)-(BOARD_HEIGHT/2)+(EDGE_WIDTH/2)});
+            Matter.Body.setPosition(leftWall, {x: window.innerWidth/2-(BOARD_WIDTH/2)-(EDGE_WIDTH/2), y: window.innerHeight/2});
+            Matter.Body.setPosition(rightWall, {x: window.innerWidth/2+(BOARD_WIDTH/2)+(EDGE_WIDTH/2), y: window.innerHeight/2});
+
+            Matter.Body.setPosition(leftFlipper.body, {x: window.innerWidth/2-FLIPPER_OFFSET, y: 500});
+            Matter.Body.setPosition(rightFlipper.body, {x: window.innerWidth/2+FLIPPER_OFFSET, y: 500});
+
+            Matter.Body.setPosition(ramp, {x: window.innerWidth/2, y: (window.innerHeight/2)+(BOARD_HEIGHT/2)-(EDGE_WIDTH/2)-50});
+
+            Matter.Body.setPosition(holder, {x: window.innerWidth/2+(BOARD_WIDTH/2)-(EDGE_WIDTH/2)-(BALL_RADIUS*2)-10, y: window.innerHeight/2});
+
+            let slingPosition = {
+                x: window.innerWidth/2 + (BOARD_WIDTH/2) - 20,
+                y: window.innerHeight/2 + (BOARD_HEIGHT/2)
+            }
+            Matter.Body.setPosition(slingBumper, {x: slingPosition.x, y: slingPosition.y });
+            slingShot.pointA = {x: slingPosition.x, y: slingPosition.y }
+            //Matter.Body.setPosition(slingShot, {x: slingPosition.x, y: slingPosition.y });
+        }
+
+        function moveFlipper(leftOrRight, direction) {
+
+            let flipper = leftOrRight == "right" ? rightFlipper : leftFlipper;
+
+            if (direction == 1) {
+                if (flipper.angle > FLIPPER_ANGLE_UP) {
+                    flipper.angle -= FLIPPER_SPEED;
+                    if (flipper.angle < FLIPPER_ANGLE_UP) {
+                        flipper.angle = FLIPPER_ANGLE_UP;
+                    }
+                }
+                Matter.Body.setAngle(flipper.body, flipper.angle);
+
+                if (flipper.angle > FLIPPER_ANGLE_UP) {
+                    flipper.anim = requestAnimationFrame(function() {
+                        moveFlipper(leftOrRight, direction);
+                    })
+                }
+            } else {
+                if (flipper.angle < FLIPPER_ANGLE_DOWN) {
+                    flipper.angle += FLIPPER_SPEED;
+                    if (flipper.angle > FLIPPER_ANGLE_DOWN) {
+                        flipper.angle = FLIPPER_ANGLE_DOWN;
+                    }
+                }
+                Matter.Body.setAngle(flipper.body, flipper.angle);
+
+                if (flipper.angle < FLIPPER_ANGLE_DOWN) {
+                    flipper.anim = requestAnimationFrame(function() {
+                        moveFlipper(leftOrRight, direction);
+                    })
+                }
+            }
+        }
+
+        window.addEventListener("resize", function(){
+            reposition();
+        });
+        
+        window.addEventListener("keydown", event => {
+            if (event.keyCode == 65) { //Left
+                cancelAnimationFrame(leftFlipper.anim);
+                moveFlipper("left", 1);
+            } else if (event.keyCode == 68) { //right
+                cancelAnimationFrame(rightFlipper.anim);
+                moveFlipper("right", 0);
+            }
+        });
+
+        window.addEventListener("keyup", event => {
+            if (event.keyCode == 65) { //Left
+                cancelAnimationFrame(leftFlipper.anim);
+                moveFlipper("left", 0);
+            } else if (event.keyCode == 68) { //right
+                cancelAnimationFrame(rightFlipper.anim);
+                moveFlipper("right", 1);
+            }
+        });
+
+        reposition();
+
+        /*
+        * Mouse
+        */
+        let mouse = Matter.Mouse.create(render.canvas);
+        let mouseConstraint = Matter.MouseConstraint.create(engine, {
+            mouse: mouse,
+            constraint: {
+                render: {visible: false}
+            }
+        })
+        render.mouse = mouse;
+
+        /*
+        * Render
+        */
+        Matter.World.add(engine.world, [ball,ground,leftWall,rightWall,ceiling,mouseConstraint,slingBumper, slingShot,ramp,holder, leftFlipper.body, rightFlipper.body]);
 
         Matter.Runner.run(engine);
-        Matter.Render.run(renderer);
+        Matter.Render.run(render);
 
     </script>
   </body>

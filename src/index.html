@@ -45,7 +45,7 @@
         let holder3 = Matter.Bodies.rectangle(0,0,EDGE_WIDTH,BOARD_HEIGHT-200, {isStatic: true});
 
         let ball = Matter.Bodies.circle(window.innerWidth/2+(BOARD_WIDTH/2)-(EDGE_WIDTH/2),300,BALL_RADIUS, {
-            restitution: 1 //make ball bounce
+            restitution: 0.6 //make ball bounce
         });
 
         let slingBumper = Matter.Bodies.rectangle(0,0,25,25);

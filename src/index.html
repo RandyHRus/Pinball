@@ -2,22 +2,37 @@
 <html>
   <head>
     <title>Pinball</title>
+    <link rel="stylesheet" href="styles.css">
   </head>
   <body>
+    <div class="control">
+        <p>
+        Controls:<br>
+        Charge ball - Hold R<br>
+        Right flipper - D<br>
+        Left flipper - A<br>
+        </p>
+    </div>
     <script src="matter.js" type="text/javascript"></script>
     <script src="gameBoard.js" type="text/javascript"></script>
     <script src="flipper.js" type="text/javascript"></script>
+    <script src="bumper.js" type="text/javascript"></script>
     <script>
         let engine = Matter.Engine.create();
 
-        FLIPPER_ANGLE_UP = Math.PI * -0.19;
+        engine.gravity.y = 0.9
+
+        FLIPPER_ANGLE_UP = Math.PI * -0.2;
         FLIPPER_ANGLE_DOWN = Math.PI * 0.19;
         FLIPPER_SPEED = 0.3;
         FLIPPER_OFFSET = 130;
 
         CHARGE_SPEED = 0.05;
         CHARGE_TARGET_STIFFNESS = 0.0001;
-        CHARGE_DEFAULT_STIFFNESS = 0.125;
+        CHARGE_DEFAULT_STIFFNESS = 0.2;
+
+        AREA_SIZE_X = 600;
+        AREA_SIZE_Y = 700;
 
         let charging = false;
         let charge_amount = 0;
@@ -33,7 +48,8 @@
             leftFlipper, 
             rightFlipper,
             slingBumper,
-            slingString
+            slingString,
+            ball
         ] = drawBoard();
 
         update();
@@ -78,12 +94,15 @@
             }
 
             if (charging) {
-                console.log(charge_amount)
                 charge_amount -= CHARGE_SPEED;
                 if (charge_amount < CHARGE_TARGET_STIFFNESS) {
                     charge_amount = CHARGE_TARGET_STIFFNESS;
                 }
                 slingString.stiffness = charge_amount;
+            }
+            console.log(ball.position.y)
+            if (ball.position.y > 620) {
+                resetBall();
             }
 
             requestAnimationFrame(function() {

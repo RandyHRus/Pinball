@@ -1,9 +1,7 @@
 FLIPPER_LENGTH = 70;
-FLIPPER_WIDTH = 10;
+FLIPPER_WIDTH = 20;
 
 function constructFlipper(gridPos, reverse) {
-    console.log(calculateWorldPos(gridPos));
-    console.log({x: (reverse? 1 : -1) * (FLIPPER_LENGTH/2 - 8), y:0});
     let flipperBody = Matter.Bodies.rectangle(0, 0, FLIPPER_LENGTH, FLIPPER_WIDTH)
     let flipperPivot = Matter.Constraint.create({
         bodyA: flipperBody,
